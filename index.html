@@ -106,7 +106,7 @@
             margin-bottom: 25px;
         }
 
-        /* Символическая светящаяся звезда-кейс */
+        /* Символическая звезда-кейс */
         .case-logo {
             font-size: 80px;
             filter: drop-shadow(0 0 20px var(--purple-glow));
@@ -221,7 +221,7 @@
         <div class="header">
             <div class="logo">StarWin</div>
             <div class="balance" id="balance-view">
-                <span>⭐️</span> <span id="stars-count">120</span> XTR
+                <span>⭐️</span> <span id="stars-count">0</span> XTR
             </div>
         </div>
 
@@ -259,13 +259,18 @@
         </div>
     </div>
 
-   <script>
+<script>
     // Инициализируем Telegram WebApp
     const tg = window.Telegram.WebApp;
     tg.expand(); // Раскрываем на весь экран
 
-    // Запрашиваем баланс из параметров (чуть позже сделаем динамическим, пока оставим так)
-    let balance = 120; 
+    // Считываем баланс игрока из параметров ссылки (например: index.html?balance=325)
+    const urlParams = new URLSearchParams(window.location.search);
+    let balance = parseInt(urlParams.get('balance')) || 0;
+
+    // Сразу отображаем реальный баланс на экране
+    document.getElementById('stars-count').innerText = balance;
+
     const gifts = [
         { name: "🧸 Обычный Мишка", icon: "🧸" },
         { name: "🎈 Воздушный Шарик", icon: "🎈" },
@@ -281,7 +286,7 @@
             return;
         }
 
-        // Визуально списываем баланс на экране
+        // Списываем баланс на экране
         balance -= 20;
         document.getElementById('stars-count').innerText = balance;
 
@@ -301,10 +306,10 @@
             if (width >= 100) {
                 clearInterval(interval);
                 
-                // Выбираем приз рандомно на фронте
+                // Выбираем приз
                 const prize = gifts[Math.floor(Math.random() * gifts.length)];
                 
-                // Показываем результат на экране
+                // Показываем результат
                 caseArt.innerText = prize.icon;
                 dropText.innerText = `Выпало: ${prize.name}!`;
                 
@@ -312,16 +317,15 @@
                 progressParent.style.display = 'none';
                 progressLine.style.width = '0%';
 
-                // Вибрация на телефоне
+                // Вибрация телефона
                 if (tg.HapticFeedback) {
                     tg.HapticFeedback.notificationOccurred('success');
                 }
 
-                // ВАЖНО: Отправляем данные боту!
-                // Отправляем строку вида: "web_drop:🧸 Обычный Мишка"
+                // Отправляем данные боту
                 setTimeout(() => {
                     tg.sendData(`web_drop:${prize.name}`);
-                }, 1500); // Закроет мини-апп и отправит данные через 1.5 секунды после выигрыша
+                }, 1500); 
 
             } else {
                 width += 5;
@@ -338,3 +342,5 @@
         });
     }
 </script>
+</body>
+</html>

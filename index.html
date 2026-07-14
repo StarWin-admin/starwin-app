@@ -188,6 +188,7 @@
             position: sticky;
             bottom: 0;
             backdrop-filter: blur(20px);
+            z-index: 999;
         }
 
         .nav-item {
@@ -209,6 +210,111 @@
 
         .nav-icon {
             font-size: 20px;
+        }
+
+        /* --- СТИЛИ ДЛЯ РЮКЗАКА (ШТОРКА СНИЗУ) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(5px);
+            display: none; /* Скрыто по умолчанию */
+            justify-content: center;
+            align-items: flex-end; /* Чтобы выезжало снизу */
+            z-index: 1000;
+        }
+
+        .modal-content {
+            background: #121224; /* Под тон твоего bg-color */
+            border-top: 2px solid var(--cyan-glow);
+            color: white;
+            width: 100%;
+            max-width: 450px;
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            padding: 20px;
+            box-sizing: border-box;
+            max-height: 75vh; /* Максимум 75% высоты мобилки */
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 -10px 30px rgba(0, 187, 255, 0.15);
+            animation: slideUp 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-bottom: 15px;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: #8a8a9e;
+            font-size: 28px;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 5px;
+        }
+
+        .close-btn:active {
+            color: #fff;
+        }
+
+        /* Сетка для предметов */
+        .inventory-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 штуки в ряд */
+            gap: 10px;
+            overflow-y: auto; /* Скролл, если вещей много */
+            padding-bottom: 20px;
+        }
+
+        /* Карточка шмотки */
+        .inventory-item {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 12px 6px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .item-icon {
+            font-size: 36px;
+            filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));
+        }
+
+        .item-name {
+            margin: 0;
+            font-size: 11px;
+            font-weight: 600;
+            color: #eaeaea;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis; /* Обрежет слишком длинный текст */
         }
     </style>
 </head>
@@ -243,13 +349,38 @@
         </div>
     </div>
 
+    <!-- Модальное окно рюкзака (Шторка) -->
+    <div id="backpack-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎒 Мой Рюкзак</h3>
+                <button id="close-backpack-btn" class="close-btn">&times;</button>
+            </div>
+            <!-- Сетка с предметами (пока добавил тестовые, JS их заменит на реальные) -->
+            <div id="inventory-list" class="inventory-grid">
+                <div class="inventory-item">
+                    <span class="item-icon">🧸</span>
+                    <p class="item-name">Плюшевый Мишка</p>
+                </div>
+                <div class="inventory-item">
+                    <span class="item-icon">🖼</span>
+                    <p class="item-name">NFT: Золотой Дуров</p>
+                </div>
+                <div class="inventory-item">
+                    <span class="item-icon">⚡</span>
+                    <p class="item-name">NFT: Кибер-Хакер</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Навигационная панель -->
     <div class="nav-bar">
-        <div class="nav-item active">
+        <div class="nav-item active" id="nav-cases">
             <span class="nav-icon">🎰</span>
             <span>Кейсы</span>
         </div>
-        <div class="nav-item" onclick="showInfo('Инвентарь в разработке!')">
+        <div class="nav-item" id="nav-backpack">
             <span class="nav-icon">🎒</span>
             <span>Рюкзак</span>
         </div>
@@ -279,6 +410,40 @@
         { name: "💎 NFT: Крипто-Лев", icon: "💎" },
         { name: "⚡ NFT: Кибер-Хакер", icon: "⚡" }
     ];
+
+    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ РЮКЗАКА ---
+    const backpackModal = document.getElementById('backpack-modal');
+    const openBackpackBtn = document.getElementById('nav-backpack');
+    const closeBackpackBtn = document.getElementById('close-backpack-btn');
+    const navCasesBtn = document.getElementById('nav-cases');
+
+    // Клик по вкладке "Рюкзак" в нижнем меню
+    openBackpackBtn.addEventListener('click', () => {
+        backpackModal.style.display = 'flex';
+        
+        // Меняем активную вкладку визуально
+        openBackpackBtn.classList.add('active');
+        navCasesBtn.classList.remove('active');
+    });
+
+    // Закрыть рюкзак кликом на крестик
+    closeBackpackBtn.addEventListener('click', () => {
+        backpackModal.style.display = 'none';
+        
+        // Возвращаем активность вкладке "Кейсы"
+        navCasesBtn.classList.add('active');
+        openBackpackBtn.classList.remove('active');
+    });
+
+    // Закрыть рюкзак кликом вне самой шторки (по темной вуали)
+    backpackModal.addEventListener('click', (e) => {
+        if (e.target === backpackModal) {
+            backpackModal.style.display = 'none';
+            navCasesBtn.classList.add('active');
+            openBackpackBtn.classList.remove('active');
+        }
+    });
+
 
     function startRoll() {
         if (balance < 20) {

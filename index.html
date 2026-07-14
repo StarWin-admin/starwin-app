@@ -395,21 +395,61 @@
     const tg = window.Telegram.WebApp;
     tg.expand(); // Раскрываем на весь экран
 
-    // Считываем баланс игрока из параметров ссылки (например: index.html?balance=325)
-    const urlParams = new URLSearchParams(window.location.search);
-    let balance = parseInt(urlParams.get('balance')) || 0;
+    // База данных всех возможных предметов в игре (чтобы знать, какую иконку и имя сопоставить коду)
+    const itemsDatabase = {
+        "toy": { name: "Обычный Мишка", icon: "🧸" },
+        "balloon": { name: "Воздушный Шарик", icon: "🎈" },
+        "chocolate": { name: "Шоколадка", icon: "🍫" },
+        "nft_durov": { name: "NFT: Золотой Дуров", icon: "🖼" },
+        "nft_lion": { name: "NFT: Крипто-Лев", icon: "💎" },
+        "nft_hacker": { name: "NFT: Кибер-Хакер", icon: "⚡" }
+    };
 
-    // Сразу отображаем реальный баланс на экране
+    // Считываем параметры из URL (например: ?balance=320&inventory=toy,nft_durov)
+    const urlParams = new URLSearchParams(window.location.search);
+    
+    // Получаем баланс
+    let balance = parseInt(urlParams.get('balance')) || 0;
     document.getElementById('stars-count').innerText = balance;
 
+    // Получаем инвентарь из URL (строка через запятую) и преобразуем в массив
+    const inventoryRaw = urlParams.get('inventory'); 
+    let playerInventory = inventoryRaw ? inventoryRaw.split(',') : [];
+
+    // Список подарков для прокрутки в кейсе
     const gifts = [
-        { name: "🧸 Обычный Мишка", icon: "🧸" },
-        { name: "🎈 Воздушный Шарик", icon: "🎈" },
-        { name: "🍫 Шоколадка", icon: "🍫" },
-        { name: "🖼 NFT: Золотой Дуров", icon: "🖼" },
-        { name: "💎 NFT: Крипто-Лев", icon: "💎" },
-        { name: "⚡ NFT: Кибер-Хакер", icon: "⚡" }
+        { id: "toy", name: "Обычный Мишка", icon: "🧸" },
+        { id: "balloon", name: "Воздушный Шарик", icon: "🎈" },
+        { id: "chocolate", name: "Шоколадка", icon: "🍫" },
+        { id: "nft_durov", name: "NFT: Золотой Дуров", icon: "🖼" },
+        { id: "nft_lion", name: "NFT: Крипто-Лев", icon: "💎" },
+        { id: "nft_hacker", name: "NFT: Кибер-Хакер", icon: "⚡" }
     ];
+
+    // --- ФУНКЦИЯ ОТРИСОВКИ ПРЕДМЕТОВ В РЮКЗАКЕ ---
+    function renderInventory() {
+        const listContainer = document.getElementById('inventory-list');
+        listContainer.innerHTML = ''; // Очищаем старый список
+
+        if (playerInventory.length === 0) {
+            listContainer.innerHTML = `<div style="grid-column: span 3; text-align: center; color: #8a8a9e; padding: 20px 0;">Рюкзак пуст 🫙</div>`;
+            return;
+        }
+
+        playerInventory.forEach(itemKey => {
+            const itemData = itemsDatabase[itemKey];
+            if (itemData) {
+                // Создаем элемент карточки
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'inventory-item';
+                itemDiv.innerHTML = `
+                    <span class="item-icon">${itemData.icon}</span>
+                    <p class="item-name">${itemData.name}</p>
+                `;
+                listContainer.appendChild(itemDiv);
+            }
+        });
+    }
 
     // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ РЮКЗАКА ---
     const backpackModal = document.getElementById('backpack-modal');
@@ -417,25 +457,21 @@
     const closeBackpackBtn = document.getElementById('close-backpack-btn');
     const navCasesBtn = document.getElementById('nav-cases');
 
-    // Клик по вкладке "Рюкзак" в нижнем меню
     openBackpackBtn.addEventListener('click', () => {
-        backpackModal.style.display = 'flex';
+        // Перед тем как показать рюкзак, перерисовываем его актуальным массивом вещей
+        renderInventory();
         
-        // Меняем активную вкладку визуально
+        backpackModal.style.display = 'flex';
         openBackpackBtn.classList.add('active');
         navCasesBtn.classList.remove('active');
     });
 
-    // Закрыть рюкзак кликом на крестик
     closeBackpackBtn.addEventListener('click', () => {
         backpackModal.style.display = 'none';
-        
-        // Возвращаем активность вкладке "Кейсы"
         navCasesBtn.classList.add('active');
         openBackpackBtn.classList.remove('active');
     });
 
-    // Закрыть рюкзак кликом вне самой шторки (по темной вуали)
     backpackModal.addEventListener('click', (e) => {
         if (e.target === backpackModal) {
             backpackModal.style.display = 'none';
@@ -451,7 +487,6 @@
             return;
         }
 
-        // Списываем баланс на экране
         balance -= 20;
         document.getElementById('stars-count').innerText = balance;
 
@@ -474,7 +509,10 @@
                 // Выбираем приз
                 const prize = gifts[Math.floor(Math.random() * gifts.length)];
                 
-                // Показываем результат
+                // Сразу добавляем его локально в рюкзак игрока!
+                playerInventory.push(prize.id);
+                
+                // Показываем результат открытия
                 caseArt.innerText = prize.icon;
                 dropText.innerText = `Выпало: ${prize.name}!`;
                 
@@ -482,14 +520,13 @@
                 progressParent.style.display = 'none';
                 progressLine.style.width = '0%';
 
-                // Вибрация телефона
                 if (tg.HapticFeedback) {
                     tg.HapticFeedback.notificationOccurred('success');
                 }
 
-                // Отправляем данные боту
+                // Отправляем боту ID выпавшего предмета для записи в БД
                 setTimeout(() => {
-                    tg.sendData(`web_drop:${prize.name}`);
+                    tg.sendData(`web_drop:${prize.id}`);
                 }, 1500); 
 
             } else {

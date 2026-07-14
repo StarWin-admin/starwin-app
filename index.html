@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>StarWin App</title>
-    <!-- Подключаем официальный скрипт Telegram WebApp -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+
     <style>
         :root {
             --bg-color: #0b0b16;
@@ -15,558 +16,330 @@
             --card-bg: rgba(255, 255, 255, 0.03);
             --border-color: rgba(255, 255, 255, 0.1);
         }
-
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        /* Задний неоновый фон */
-        .glow-bg {
-            position: absolute;
-            width: 300px;
-            height: 300px;
-            background: radial-gradient(circle, rgba(188, 19, 254, 0.15) 0%, rgba(0, 0, 0, 0) 70%);
-            top: -50px;
-            z-index: -1;
-        }
-
-        /* Контейнер приложения */
-        .container {
-            width: 100%;
-            max-width: 450px;
-            padding: 20px;
-            box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            flex-grow: 1;
-        }
-
-        /* Шапка с балансом */
-        .header {
-            width: 100%;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            padding: 12px 20px;
-            border-radius: 16px;
-            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            box-sizing: border-box;
-        }
-
-        .logo {
-            font-size: 20px;
-            font-weight: 800;
-            background: linear-gradient(45deg, var(--purple-glow), var(--cyan-glow));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 10px rgba(0, 187, 255, 0.3);
-        }
-
-        .balance {
-            font-size: 16px;
-            font-weight: 600;
-            color: #ffd700;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            text-shadow: 0 0 8px rgba(255, 215, 0, 0.4);
-        }
-
-        /* Кейс и Зона открытия */
-        .case-area {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: auto 0;
-            width: 100%;
-        }
-
-        .case-box {
-            position: relative;
-            width: 180px;
-            height: 180px;
-            background: radial-gradient(circle, rgba(11, 170, 255, 0.1) 0%, rgba(0,0,0,0) 70%);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin-bottom: 25px;
-        }
-
-        /* Символическая звезда-кейс */
-        .case-logo {
-            font-size: 80px;
-            filter: drop-shadow(0 0 20px var(--purple-glow));
-            animation: pulse 2s infinite ease-in-out;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); filter: drop-shadow(0 0 20px var(--purple-glow)); }
-            50% { transform: scale(1.05); filter: drop-shadow(0 0 35px var(--cyan-glow)); }
-            100% { transform: scale(1); filter: drop-shadow(0 0 20px var(--purple-glow)); }
-        }
-
-        /* Кнопка "Открыть" */
-        .btn-open {
-            background: transparent;
-            border: 2px solid var(--cyan-glow);
-            color: #fff;
-            padding: 15px 40px;
-            font-size: 18px;
-            font-weight: 700;
-            border-radius: 50px;
-            cursor: pointer;
-            outline: none;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.3s ease;
-            box-shadow: 0 0 15px rgba(0, 187, 255, 0.2), inset 0 0 15px rgba(0, 187, 255, 0.1);
-            width: 80%;
-            max-width: 280px;
-        }
-
-        .btn-open:active {
-            transform: scale(0.95);
-            border-color: var(--purple-glow);
-            box-shadow: 0 0 25px rgba(188, 19, 254, 0.5), inset 0 0 10px rgba(188, 19, 254, 0.3);
-        }
-
-        .btn-open:disabled {
-            border-color: #444;
-            color: #666;
-            box-shadow: none;
-            cursor: not-allowed;
-        }
-
-        /* Прогресс-бар */
-        .progress-container {
-            width: 80%;
-            max-width: 280px;
-            height: 12px;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 10px;
-            margin-top: 20px;
-            overflow: hidden;
-            border: 1px solid var(--border-color);
-            display: none;
-        }
-
-        .progress-bar {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, var(--purple-glow), var(--cyan-glow));
-            box-shadow: 0 0 10px var(--cyan-glow);
-            transition: width 0.08s linear;
-        }
-
-        /* Всплывающий результат дропа */
-        .drop-result {
-            margin-top: 15px;
-            font-size: 18px;
-            font-weight: bold;
-            min-height: 24px;
-            text-align: center;
-            background: linear-gradient(90deg, #fff, #ffd700);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        /* Нижнее меню навигации */
-        .nav-bar {
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            background: rgba(11, 11, 22, 0.9);
-            border-top: 1px solid var(--border-color);
-            padding: 15px 0;
-            position: sticky;
-            bottom: 0;
-            backdrop-filter: blur(20px);
-            z-index: 999;
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            color: #8a8a9e;
-            font-size: 12px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.3s;
-        }
-
-        .nav-item.active {
-            color: var(--cyan-glow);
-            text-shadow: 0 0 10px rgba(0, 187, 255, 0.4);
-        }
-
-        .nav-icon {
-            font-size: 20px;
-        }
-
-        /* --- СТИЛИ ДЛЯ РЮКЗАКА (ШТОРКА СНИЗУ) --- */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.65);
-            backdrop-filter: blur(5px);
-            display: none;
-            justify-content: center;
-            align-items: flex-end;
-            z-index: 1000;
-        }
-
-        .modal-content {
-            background: #121224;
-            border-top: 2px solid var(--cyan-glow);
-            color: white;
-            width: 100%;
-            max-width: 450px;
-            border-top-left-radius: 24px;
-            border-top-right-radius: 24px;
-            padding: 20px;
-            box-sizing: border-box;
-            max-height: 75vh;
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 -10px 30px rgba(0, 187, 255, 0.15);
-            animation: slideUp 0.3s cubic-bezier(0.1, 0.76, 0.55, 0.94);
-        }
-
-        @keyframes slideUp {
-            from { transform: translateY(100%); }
-            to { transform: translateY(0); }
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 12px;
-            margin-bottom: 15px;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 700;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: #8a8a9e;
-            font-size: 28px;
-            cursor: pointer;
-            line-height: 1;
-            padding: 0 5px;
-        }
-
-        .close-btn:active {
-            color: #fff;
-        }
-
-        /* Сетка для предметов */
-        .inventory-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            overflow-y: auto;
-            padding-bottom: 20px;
-            -webkit-overflow-scrolling: touch; /* Плавный скролл на iOS */
-        }
-
-        /* Карточка шмотки */
-        .inventory-item {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 14px;
-            padding: 12px 6px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .item-icon {
-            font-size: 36px;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.1));
-        }
-
-        .item-name {
-            margin: 0;
-            font-size: 11px;
-            font-weight: 600;
-            color: #eaeaea;
-            width: 100%;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
+        body { margin:0; padding:0; background-color:var(--bg-color); color:var(--text-color); font-family:'Segoe UI', Roboto, Helvetica, Arial, sans-serif; display:flex; flex-direction:column; align-items:center; min-height:100vh; overflow-x:hidden; user-select:none; -webkit-user-select:none; }
+        .glow-bg{ position:absolute; width:300px; height:300px; background:radial-gradient(circle, rgba(188,19,254,0.15) 0%, rgba(0,0,0,0) 70%); top:-50px; z-index:-1; }
+        .container{ width:100%; max-width:450px; padding:20px; box-sizing:border-box; display:flex; flex-direction:column; align-items:center; flex-grow:1; }
+        .header{ width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:30px; background:var(--card-bg); border:1px solid var(--border-color); padding:12px 20px; border-radius:16px; box-shadow:0 4px 30px rgba(0,0,0,0.5); backdrop-filter: blur(10px); box-sizing:border-box; }
+        .logo{ font-size:20px; font-weight:800; background:linear-gradient(45deg,var(--purple-glow),var(--cyan-glow)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; text-shadow:0 0 10px rgba(0,187,255,0.3); }
+        .balance{ font-size:16px; font-weight:600; color:#ffd700; display:flex; align-items:center; gap:8px; text-shadow:0 0 8px rgba(255,215,0,0.4); }
+        .case-area{ display:flex; flex-direction:column; align-items:center; margin:auto 0; width:100%; }
+        .case-box{ position:relative; width:180px; height:180px; background:radial-gradient(circle, rgba(11,170,255,0.06) 0%, rgba(0,0,0,0) 70%); display:flex; justify-content:center; align-items:center; margin-bottom:18px; border-radius:16px; box-shadow: 0 8px 30px rgba(0,0,0,0.6); }
+        .case-art{ font-size:80px; filter:drop-shadow(0 0 20px var(--purple-glow)); transition: transform 260ms ease, filter 260ms ease; }
+        .btn-open{ background:transparent; border:2px solid var(--cyan-glow); color:#fff; padding:14px 36px; font-size:18px; font-weight:700; border-radius:50px; cursor:pointer; outline:none; text-transform:uppercase; letter-spacing:1px; transition: all 0.25s ease; box-shadow:0 0 15px rgba(0,187,255,0.12), inset 0 0 10px rgba(0,187,255,0.06); width:80%; max-width:280px; }
+        .btn-open:active{ transform:scale(0.98); border-color:var(--purple-glow); box-shadow: 0 0 25px rgba(188,19,254,0.45); }
+        .btn-open:disabled{ border-color:#444; color:#666; box-shadow:none; cursor:not-allowed; opacity:0.7; }
+        .progress-container{ width:80%; max-width:280px; height:12px; background:rgba(255,255,255,0.04); border-radius:10px; margin-top:18px; overflow:hidden; border:1px solid var(--border-color); display:none; }
+        .progress-bar{ width:0%; height:100%; background:linear-gradient(90deg,var(--purple-glow),var(--cyan-glow)); box-shadow:0 0 10px var(--cyan-glow); transition: width 80ms linear; }
+        .drop-result{ margin-top:14px; font-size:18px; font-weight:700; min-height:26px; text-align:center; background:linear-gradient(90deg,#fff,#ffd700); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+        .nav-bar{ width:100%; display:flex; justify-content:space-around; background:rgba(11,11,22,0.9); border-top:1px solid var(--border-color); padding:14px 0; position:sticky; bottom:0; backdrop-filter: blur(20px); z-index:999; }
+        .nav-item{ display:flex; flex-direction:column; align-items:center; gap:6px; color:#8a8a9e; font-size:12px; font-weight:500; cursor:pointer; transition:color 0.25s; }
+        .nav-item.active{ color:var(--cyan-glow); text-shadow:0 0 10px rgba(0,187,255,0.4); }
+        .modal-overlay{ position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); display:none; justify-content:center; align-items:flex-end; z-index:1000; }
+        .modal-content{ background:#121224; border-top:2px solid var(--cyan-glow); color:white; width:100%; max-width:450px; border-top-left-radius:24px; border-top-right-radius:24px; padding:18px; box-sizing:border-box; max-height:75vh; display:flex; flex-direction:column; box-shadow:0 -10px 30px rgba(0,187,255,0.12); animation:slideUp 0.28s cubic-bezier(0.1,0.76,0.55,0.94); }
+        @keyframes slideUp { from{ transform: translateY(100%); } to{ transform: translateY(0); } }
+        .inventory-grid{ display:grid; grid-template-columns:repeat(3,1fr); gap:10px; overflow-y:auto; padding-bottom:20px; -webkit-overflow-scrolling:touch; }
+        .inventory-item{ background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:10px 6px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; transition: transform 320ms cubic-bezier(.2,.9,.3,1), opacity 320ms; }
+        .item-icon{ font-size:34px; filter:drop-shadow(0 0 10px rgba(255,255,255,0.08)); }
+        .item-name{ margin:0; font-size:12px; font-weight:700; color:#eaeaea; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        /* reveal + rarity */
+        .reveal { animation: prizeReveal 420ms cubic-bezier(.2,.9,.3,1); }
+        @keyframes prizeReveal { 0% { transform: scale(0.6); opacity: 0; filter: blur(6px); } 60% { transform: scale(1.08); opacity: 1; filter: blur(0); } 100% { transform: scale(1); } }
+        .rarity-common { box-shadow: 0 8px 30px rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); }
+        .rarity-epic { box-shadow: 0 12px 40px rgba(188,19,254,0.18); border:1px solid rgba(188,19,254,0.28); }
+        .balance-update { transition: transform 220ms cubic-bezier(.2,.9,.3,1); transform-origin:center; }
+        .balance-pulse { transform: scale(1.08); }
+        .inventory-add { transform: scale(0.65); opacity: 0; }
+        .inventory-add.show { transform: scale(1); opacity: 1; }
+        .small-muted { color: #8a8a9e; font-size: 12px; }
     </style>
 </head>
 <body>
-
     <div class="glow-bg"></div>
-
     <div class="container">
-        <!-- Шапка приложения -->
         <div class="header">
             <div class="logo">StarWin</div>
             <div class="balance" id="balance-view">
-                <span>⭐️</span> <span id="stars-count">0</span> XTR
+                <span>⭐️</span>
+                <span id="stars-count">0</span>
+                <span id="currency-label">Stars</span>
             </div>
         </div>
 
-        <!-- Игровая зона открытия кейсов -->
         <div class="case-area">
             <div class="case-box">
-                <div class="case-logo" id="case-art">📦</div>
+                <div id="case-art" class="case-art">📦</div>
             </div>
-            
+
             <button class="btn-open" id="btn-spin" onclick="startRoll()">Открыть кейс</button>
-            
-            <!-- Прогресс-бар во время ролла -->
+
             <div class="progress-container" id="progress-parent">
                 <div class="progress-bar" id="progress-line"></div>
             </div>
 
-            <!-- Сюда выводится приз -->
             <div class="drop-result" id="drop-text"></div>
         </div>
     </div>
 
-    <!-- Модальное окно рюкзака (Шторка) -->
     <div id="backpack-modal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3>🎒 Мой Рюкзак</h3>
-                <button id="close-backpack-btn" class="close-btn">&times;</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h3 style="margin:0">🎒 Мой Рюкзак</h3>
+                <button id="close-backpack-btn" style="background:none;border:none;color:#8a8a9e;font-size:28px;cursor:pointer;">&times;</button>
             </div>
-            <!-- Сетка с предметами (рендерится динамически) -->
             <div id="inventory-list" class="inventory-grid"></div>
+            <div style="margin-top:8px" class="small-muted">Нажмите предмет, чтобы продать через бота.</div>
         </div>
     </div>
 
-    <!-- Навигационная панель -->
     <div class="nav-bar">
-        <div class="nav-item active" id="nav-cases">
-            <span class="nav-icon">🎰</span>
-            <span>Кейсы</span>
-        </div>
-        <div class="nav-item" id="nav-backpack">
-            <span class="nav-icon">🎒</span>
-            <span>Рюкзак</span>
-        </div>
-        <div class="nav-item" id="nav-profile">
-            <span class="nav-icon">👤</span>
-            <span>Профиль</span>
-        </div>
+        <div class="nav-item active" id="nav-cases"><span class="nav-icon">🎰</span><span>Кейсы</span></div>
+        <div class="nav-item" id="nav-backpack"><span class="nav-icon">🎒</span><span>Рюкзак</span></div>
+        <div class="nav-item" id="nav-profile"><span class="nav-icon">👤</span><span>Профиль</span></div>
     </div>
+
+    <!-- Audio (положите свои файлы в /assets/sounds/ или укажите URL) -->
+    <audio id="s_open" src="/assets/sounds/open.mp3" preload="auto"></audio>
+    <audio id="s_win" src="/assets/sounds/win.mp3" preload="auto"></audio>
 
 <script>
-    // Инициализируем Telegram WebApp безопасно
-    const tg = window.Telegram ? window.Telegram.WebApp : null;
-    if (tg) {
-        tg.expand(); // Раскрываем на весь экран
-        tg.ready();
+/* ====== Настройки: замените SERVER на ваш сервер (HTTPS) ====== */
+const SERVER = "https://your-server.example.com"; // <- Замените на реальный адрес
+const CURRENCY_LABEL = "Stars";
+const ROLL_COST = 20;
+
+/* ====== Telegram WebApp init ====== */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+if (tg) { tg.expand(); tg.ready(); }
+
+/* ====== Данные предметов ====== */
+const itemsDatabase = {
+    "toy": { name: "Обычный Мишка", icon: "🧸", rarity: "common" },
+    "balloon": { name: "Воздушный Шарик", icon: "🎈", rarity: "common" },
+    "chocolate": { name: "Шоколадка", icon: "🍫", rarity: "common" },
+    "nft_durov": { name: "NFT: Золотой Дуров", icon: "🖼", rarity: "epic" },
+    "nft_lion": { name: "NFT: Крипто-Лев", icon: "💎", rarity: "epic" },
+    "nft_hacker": { name: "NFT: Кибер-Хакер", icon: "⚡", rarity: "epic" }
+};
+
+/* ====== UI state ====== */
+let balance = 0;
+let playerInventory = []; // массив id предметов e.g. ["toy", "nft_durov"]
+let isRolling = false;
+
+document.getElementById('currency-label').innerText = CURRENCY_LABEL;
+
+async function loadInitData() {
+    if (!tg || !tg.initData || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+        updateBalanceView();
+        return;
     }
-
-    // База данных всех возможных предметов
-    const itemsDatabase = {
-        "toy": { name: "Обычный Мишка", icon: "🧸" },
-        "balloon": { name: "Воздушный Шарик", icon: "🎈" },
-        "chocolate": { name: "Шоколадка", icon: "🍫" },
-        "nft_durov": { name: "NFT: Золотой Дуров", icon: "🖼" },
-        "nft_lion": { name: "NFT: Крипто-Лев", icon: "💎" },
-        "nft_hacker": { name: "NFT: Кибер-Хакер", icon: "⚡" }
-    };
-
-    // Считываем параметры из URL
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    // Получаем баланс
-    let balance = parseInt(urlParams.get('balance')) || 0;
-    document.getElementById('stars-count').innerText = balance;
-
-    // Получаем инвентарь из URL
-    const inventoryRaw = urlParams.get('inventory'); 
-    let playerInventory = inventoryRaw ? inventoryRaw.split(',').filter(x => x) : [];
-
-    // Список подарков для прокрутки в кейсе
-    const gifts = [
-        { id: "toy", name: "Обычный Мишка", icon: "🧸" },
-        { id: "balloon", name: "Воздушный Шарик", icon: "🎈" },
-        { id: "chocolate", name: "Шоколадка", icon: "🍫" },
-        { id: "nft_durov", name: "NFT: Золотой Дуров", icon: "🖼" },
-        { id: "nft_lion", name: "NFT: Крипто-Лев", icon: "💎" },
-        { id: "nft_hacker", name: "NFT: Кибер-Хакер", icon: "⚡" }
-    ];
-
-    // --- ФУНКЦИЯ ОТРИСОВКИ ПРЕДМЕТОВ В РЮКЗАКЕ ---
-    function renderInventory() {
-        const listContainer = document.getElementById('inventory-list');
-        listContainer.innerHTML = ''; // Очищаем старый список
-
-        if (playerInventory.length === 0) {
-            listContainer.innerHTML = `<div style="grid-column: span 3; text-align: center; color: #8a8a9e; padding: 40px 0;">Рюкзак пуст 🫙</div>`;
+    const fd = new FormData();
+    fd.append("init_data", tg.initData);
+    fd.append("telegram_id", String(tg.initDataUnsafe.user.id));
+    try {
+        const res = await fetch(`${SERVER}/api/init`, { method: "POST", body: fd });
+        if (!res.ok) {
+            console.error("/api/init error", res.status, await res.text());
+            updateBalanceView();
             return;
         }
-
-        playerInventory.forEach(itemKey => {
-            const itemData = itemsDatabase[itemKey];
-            if (itemData) {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'inventory-item';
-                itemDiv.innerHTML = `
-                    <span class="item-icon">${itemData.icon}</span>
-                    <p class="item-name">${itemData.name}</p>
-                `;
-                listContainer.appendChild(itemDiv);
-            }
-        });
-    }
-
-    // --- ЛОГИКА ОТКРЫТИЯ/ЗАКРЫТИЯ РЮКЗАКА ---
-    const backpackModal = document.getElementById('backpack-modal');
-    const openBackpackBtn = document.getElementById('nav-backpack');
-    const closeBackpackBtn = document.getElementById('close-backpack-btn');
-    const navCasesBtn = document.getElementById('nav-cases');
-    const navProfileBtn = document.getElementById('nav-profile');
-
-    openBackpackBtn.addEventListener('click', () => {
+        const data = await res.json();
+        balance = Number(data.balance) || 0;
+        // ожидаем data.inventory = [{id, name, rarity}], используем id
+        playerInventory = Array.isArray(data.inventory) ? data.inventory.map(it => it.id || it.name) : [];
+        updateBalanceView();
         renderInventory();
-        backpackModal.style.display = 'flex';
-        openBackpackBtn.classList.add('active');
-        navCasesBtn.classList.remove('active');
+    } catch (e) {
+        console.error("init fetch error", e);
+        updateBalanceView();
+    }
+}
+
+function updateBalanceView() {
+    const el = document.getElementById('stars-count');
+    el.innerText = balance;
+    el.classList.add('balance-pulse');
+    setTimeout(()=>el.classList.remove('balance-pulse'), 300);
+}
+
+/* render inventory grid from playerInventory (ids) */
+function renderInventory() {
+    const list = document.getElementById('inventory-list');
+    list.innerHTML = '';
+    if (!playerInventory || playerInventory.length === 0) {
+        list.innerHTML = `<div style="grid-column:span 3; text-align:center; color:#8a8a9e; padding:40px 0">Рюкзак пуст 🫙</div>`;
+        return;
+    }
+    playerInventory.slice().reverse().forEach(id => {
+        const item = itemsDatabase[id] || { name: id, icon: "🎁", rarity: "common" };
+        const div = document.createElement('div');
+        div.className = 'inventory-item';
+        div.innerHTML = `<div class="item-icon">${item.icon}</div><div class="item-name">${item.name}</div>`;
+        // click -> send sell request via bot callback (existing bot handler uses InlineKeyboard buttons),
+        // here we just show hint to sell via bot interface
+        div.addEventListener('click', () => {
+            if (tg) tg.showPopup({ title: 'Продажа', message: 'Чтобы продать предмет — открой бот и продай через инлайн-кнопку.', buttons:[{type:'ok'}] });
+            else alert('Чтобы продать предмет — открой бот и используй кнопку "Инвентарь".');
+        });
+        list.appendChild(div);
     });
+}
 
-    closeBackpackBtn.addEventListener('click', () => {
-        backpackModal.style.display = 'none';
-        navCasesBtn.classList.add('active');
-        openBackpackBtn.classList.remove('active');
-    });
+/* Helpers: sounds/confetti/animation */
+const soundOpen = document.getElementById('s_open');
+const soundWin = document.getElementById('s_win');
+function playSound(el) { try { el.currentTime = 0; el.play().catch(()=>{}); } catch(e) {} }
+function confettiBurst() {
+    confetti({ particleCount: 60, spread: 70, origin: { y: 0.35 } });
+    confetti({ particleCount: 40, spread: 120, origin: { y: 0.25 } });
+}
+function animateBalanceChange(oldVal, newVal) {
+    const el = document.getElementById('stars-count');
+    const duration = 700;
+    const start = performance.now();
+    const diff = newVal - oldVal;
+    function frame(t) {
+        const p = Math.min(1, (t - start)/duration);
+        const eased = p < 0.5 ? 2*p*p : -1 + (4 - 2*p)*p;
+        el.innerText = Math.round(oldVal + diff*eased);
+        if (p < 1) requestAnimationFrame(frame);
+        else el.innerText = newVal;
+    }
+    requestAnimationFrame(frame);
+    el.classList.add('balance-pulse');
+    setTimeout(()=>el.classList.remove('balance-pulse'), 350);
+}
+function animateAddToInventory(itemId) {
+    const list = document.getElementById('inventory-list');
+    const item = itemsDatabase[itemId] || { name: itemId, icon: '🎁' };
+    const div = document.createElement('div');
+    div.className = 'inventory-item inventory-add';
+    div.innerHTML = `<div class="item-icon">${item.icon}</div><div class="item-name">${item.name}</div>`;
+    list.prepend(div);
+    requestAnimationFrame(()=> div.classList.add('show'));
+}
 
-    backpackModal.addEventListener('click', (e) => {
-        if (e.target === backpackModal) {
-            backpackModal.style.display = 'none';
-            navCasesBtn.classList.add('active');
-            openBackpackBtn.classList.remove('active');
-        }
-    });
-
-    // --- ПРОФИЛЬ ---
-    navProfileBtn.addEventListener('click', () => {
-        let username = "Пользователь";
-        if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
-            username = tg.initDataUnsafe.user.first_name || tg.initDataUnsafe.user.username;
-        }
-        showInfo(`Привет, ${username}! Данные подгружены из Telegram.`);
-    });
-
-
-    // --- ЛОГИКА ОТКРЫТИЯ КЕЙСА ---
-    let isRolling = false;
-
-    function startRoll() {
-        if (isRolling) return;
-
-        if (balance < 20) {
-            if (tg) {
-                tg.showAlert("Недостаточно звезд на балансе! Стоимость открытия — 20 XTR.");
-            } else {
-                alert("Недостаточно звезд на балансе!");
-            }
-            return;
-        }
-
-        isRolling = true;
-        balance -= 20;
-        document.getElementById('stars-count').innerText = balance;
-
-        const btn = document.getElementById('btn-spin');
-        const progressParent = document.getElementById('progress-parent');
-        const progressLine = document.getElementById('progress-line');
-        const dropText = document.getElementById('drop-text');
-        const caseArt = document.getElementById('case-art');
-
-        btn.style.display = 'none';
-        progressParent.style.display = 'block';
-        dropText.innerText = 'Роллим кейс...';
-        caseArt.innerText = '🎰';
-
-        let width = 0;
-        const interval = setInterval(() => {
-            if (width >= 100) {
-                clearInterval(interval);
-                
-                // Выбираем приз
-                const prize = gifts[Math.floor(Math.random() * gifts.length)];
-                
-                // Добавляем локально в рюкзак
-                playerInventory.push(prize.id);
-                
-                // Показываем результат
-                caseArt.innerText = prize.icon;
-                dropText.innerText = `Выпало: ${prize.name}!`;
-                
-                btn.style.display = 'block';
-                progressParent.style.display = 'none';
-                progressLine.style.width = '0%';
-                isRolling = false;
-
-                if (tg && tg.HapticFeedback) {
-                    tg.HapticFeedback.notificationOccurred('success');
-                }
-
-                // Отправляем данные боту (закроет приложение, если запущено через KeyboardButton)
-                if (tg) {
-                    setTimeout(() => {
-                        tg.sendData(`web_drop:${prize.id}`);
-                    }, 1500); 
-                }
-
-            } else {
-                width += 5;
-                progressLine.style.width = width + '%';
-            }
-        }, 80);
+/* Roll logic with carousel, server fix_drop and animations */
+async function startRoll() {
+    if (isRolling) return;
+    if (!tg || !tg.initData || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
+        return showInfo("Открой игру внутри Telegram (через бота) для корректной работы.");
+    }
+    if (balance < ROLL_COST) {
+        return tg ? tg.showAlert(`Недостаточно ${CURRENCY_LABEL}. Стоимость — ${ROLL_COST} ${CURRENCY_LABEL}.`) : alert(`Недостаточно ${CURRENCY_LABEL}.`);
     }
 
-    function showInfo(msg) {
-        if (tg) {
-            tg.showPopup({
-                title: 'Информация',
-                message: msg,
-                buttons: [{type: 'ok'}]
-            });
-        } else {
-            alert(msg);
+    isRolling = true;
+    const btn = document.getElementById('btn-spin');
+    const progressParent = document.getElementById('progress-parent');
+    const progressLine = document.getElementById('progress-line');
+    const dropText = document.getElementById('drop-text');
+    const caseArt = document.getElementById('case-art');
+
+    btn.disabled = true;
+    progressParent.style.display = 'block';
+    progressLine.style.width = '0%';
+    dropText.innerText = 'Роллим кейс...';
+
+    playSound(soundOpen);
+
+    // carousel
+    const display = Object.keys(itemsDatabase);
+    let idx = 0;
+    const carousel = setInterval(()=> {
+        const key = display[idx % display.length];
+        const item = itemsDatabase[key];
+        caseArt.innerText = item.icon;
+        idx++;
+        progressLine.style.width = `${(idx % 20) * 5}%`;
+    }, 80);
+
+    const wait = 1800 + Math.random()*900;
+    await new Promise(r => setTimeout(r, wait));
+    clearInterval(carousel);
+
+    // pick prize (can be server-side weighted later; here random client-side selection but we will request fix on server)
+    const keys = Object.keys(itemsDatabase);
+    const prizeKey = keys[Math.floor(Math.random()*keys.length)];
+    const prize = itemsDatabase[prizeKey];
+
+    let ok = false;
+    const initData = tg.initData;
+    const telegram_id = String(tg.initDataUnsafe.user.id);
+
+    try {
+        const fd = new FormData();
+        fd.append("init_data", initData);
+        fd.append("telegram_id", telegram_id);
+        fd.append("item_id", prizeKey);
+
+        const res = await fetch(`${SERVER}/api/fix_drop`, { method: "POST", body: fd });
+        if (!res.ok) {
+            const json = await res.json().catch(()=>null);
+            throw new Error(json?.detail || `server ${res.status}`);
         }
+        const data = await res.json();
+        const oldBal = balance;
+        balance = Number(data.balance) || balance;
+        animateBalanceChange(oldBal, balance);
+
+        // visual reveal
+        caseArt.innerText = prize.icon;
+        caseArt.classList.add('reveal');
+        dropText.innerText = `Выпало: ${prize.name}!`;
+        caseArt.parentElement.classList.add(prize.rarity === 'epic' ? 'rarity-epic' : 'rarity-common');
+        setTimeout(()=> { caseArt.classList.remove('reveal'); caseArt.parentElement.classList.remove('rarity-epic'); caseArt.parentElement.classList.remove('rarity-common'); }, 900);
+
+        // add to UI inventory
+        playerInventory.unshift(prizeKey);
+        animateAddToInventory(prizeKey);
+
+        confettiBurst();
+        playSound(soundWin);
+        ok = true;
+    } catch (e) {
+        console.error("fix_drop error", e);
+        if (tg) tg.showAlert("Не удалось зафиксировать дроп: " + (e.message || e));
+        else alert("Не удалось зафиксировать дроп: " + (e.message || e));
+        ok = false;
     }
+
+    if (!ok) {
+        dropText.innerText = 'Ошибка фиксации дропа.';
+    }
+
+    btn.disabled = false;
+    progressParent.style.display = 'none';
+    progressLine.style.width = '0%';
+    isRolling = false;
+}
+
+/* UI helpers */
+function showInfo(msg) {
+    if (tg) tg.showPopup({ title: 'Информация', message: msg, buttons: [{type:'ok'}] });
+    else alert(msg);
+}
+
+/* Modal and nav handlers */
+const backpackModal = document.getElementById('backpack-modal');
+const openBackpackBtn = document.getElementById('nav-backpack');
+const closeBackpackBtn = document.getElementById('close-backpack-btn');
+const navCasesBtn = document.getElementById('nav-cases');
+const navProfileBtn = document.getElementById('nav-profile');
+
+openBackpackBtn.addEventListener('click', ()=> { renderInventory(); backpackModal.style.display = 'flex'; openBackpackBtn.classList.add('active'); navCasesBtn.classList.remove('active'); });
+closeBackpackBtn.addEventListener('click', ()=> { backpackModal.style.display = 'none'; navCasesBtn.classList.add('active'); openBackpackBtn.classList.remove('active'); });
+backpackModal.addEventListener('click', (e)=> { if (e.target === backpackModal) { backpackModal.style.display = 'none'; navCasesBtn.classList.add('active'); openBackpackBtn.classList.remove('active'); } });
+
+navProfileBtn.addEventListener('click', ()=> {
+    let uname = "Пользователь";
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) uname = tg.initDataUnsafe.user.first_name || tg.initDataUnsafe.user.username || uname;
+    showInfo(`Привет, ${uname}!`);
+});
+
+/* Запуск init при загрузке */
+window.addEventListener('load', ()=> { loadInitData(); });
 </script>
+
 </body>
 </html>

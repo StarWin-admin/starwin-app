@@ -259,77 +259,82 @@
         </div>
     </div>
 
-    <script>
-        // Инициализируем Telegram WebApp
-        const tg = window.Telegram.WebApp;
-        tg.expand(); // Раскрываем приложение на весь экран телефона
+   <script>
+    // Инициализируем Telegram WebApp
+    const tg = window.Telegram.WebApp;
+    tg.expand(); // Раскрываем на весь экран
 
-        let balance = 120;
-        const gifts = [
-            { name: "🧸 Обычный Мишка", icon: "🧸" },
-            { name: "🎈 Воздушный Шарик", icon: "🎈" },
-            { name: "🍫 Шоколадка", icon: "🍫" },
-            { name: "🖼 NFT: Золотой Дуров", icon: "🖼" },
-            { name: "💎 NFT: Крипто-Лев", icon: "💎" },
-            { name: "⚡ NFT: Кибер-Хакер", icon: "⚡" }
-        ];
+    // Запрашиваем баланс из параметров (чуть позже сделаем динамическим, пока оставим так)
+    let balance = 120; 
+    const gifts = [
+        { name: "🧸 Обычный Мишка", icon: "🧸" },
+        { name: "🎈 Воздушный Шарик", icon: "🎈" },
+        { name: "🍫 Шоколадка", icon: "🍫" },
+        { name: "🖼 NFT: Золотой Дуров", icon: "🖼" },
+        { name: "💎 NFT: Крипто-Лев", icon: "💎" },
+        { name: "⚡ NFT: Кибер-Хакер", icon: "⚡" }
+    ];
 
-        function startRoll() {
-            if (balance < 20) {
-                tg.showAlert("Недостаточно звезд!");
-                return;
-            }
+    function startRoll() {
+        if (balance < 20) {
+            tg.showAlert("Недостаточно звезд на балансе!");
+            return;
+        }
 
-            // Списываем баланс (визуально на фронтенде)
-            balance -= 20;
-            document.getElementById('stars-count').innerText = balance;
+        // Визуально списываем баланс на экране
+        balance -= 20;
+        document.getElementById('stars-count').innerText = balance;
 
-            const btn = document.getElementById('btn-spin');
-            const progressParent = document.getElementById('progress-parent');
-            const progressLine = document.getElementById('progress-line');
-            const dropText = document.getElementById('drop-text');
-            const caseArt = document.getElementById('case-art');
+        const btn = document.getElementById('btn-spin');
+        const progressParent = document.getElementById('progress-parent');
+        const progressLine = document.getElementById('progress-line');
+        const dropText = document.getElementById('drop-text');
+        const caseArt = document.getElementById('case-art');
 
-            btn.style.display = 'none';
-            progressParent.style.display = 'block';
-            dropText.innerText = 'Роллим кейс...';
-            caseArt.innerText = '🎰';
+        btn.style.display = 'none';
+        progressParent.style.display = 'block';
+        dropText.innerText = 'Роллим кейс...';
+        caseArt.innerText = '🎰';
 
-            let width = 0;
-            const interval = setInterval(() => {
-                if (width >= 100) {
-                    clearInterval(interval);
-                    
-                    // Выбираем приз
-                    const prize = gifts[Math.floor(Math.random() * gifts.length)];
-                    
-                    // Показываем результат
-                    caseArt.innerText = prize.icon;
-                    dropText.innerText = `Выпало: ${prize.name}!`;
-                    
-                    // Возвращаем кнопку
-                    btn.style.display = 'block';
-                    progressParent.style.display = 'none';
-                    progressLine.style.style = '0%';
+        let width = 0;
+        const interval = setInterval(() => {
+            if (width >= 100) {
+                clearInterval(interval);
+                
+                // Выбираем приз рандомно на фронте
+                const prize = gifts[Math.floor(Math.random() * gifts.length)];
+                
+                // Показываем результат на экране
+                caseArt.innerText = prize.icon;
+                dropText.innerText = `Выпало: ${prize.name}!`;
+                
+                btn.style.display = 'block';
+                progressParent.style.display = 'none';
+                progressLine.style.width = '0%';
 
-                    // Вызываем легкую вибрацию на телефоне (если поддерживается)
-                    if (tg.HapticFeedback) {
-                        tg.HapticFeedback.notificationOccurred('success');
-                    }
-                } else {
-                    width += 5;
-                    progressLine.style.width = width + '%';
+                // Вибрация на телефоне
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.notificationOccurred('success');
                 }
-            }, 80);
-        }
 
-        function showInfo(msg) {
-            tg.showPopup({
-                title: 'Информация',
-                message: msg,
-                buttons: [{type: 'ok'}]
-            });
-        }
-    </script>
-</body>
-</html>
+                // ВАЖНО: Отправляем данные боту!
+                // Отправляем строку вида: "web_drop:🧸 Обычный Мишка"
+                setTimeout(() => {
+                    tg.sendData(`web_drop:${prize.name}`);
+                }, 1500); // Закроет мини-апп и отправит данные через 1.5 секунды после выигрыша
+
+            } else {
+                width += 5;
+                progressLine.style.width = width + '%';
+            }
+        }, 80);
+    }
+
+    function showInfo(msg) {
+        tg.showPopup({
+            title: 'Информация',
+            message: msg,
+            buttons: [{type: 'ok'}]
+        });
+    }
+</script>

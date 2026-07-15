@@ -41,7 +41,6 @@
         .inventory-item{ background:var(--card-bg); border:1px solid var(--border-color); border-radius:12px; padding:10px 6px; text-align:center; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; transition: transform 320ms cubic-bezier(.2,.9,.3,1), opacity 320ms; }
         .item-icon{ font-size:34px; filter:drop-shadow(0 0 10px rgba(255,255,255,0.08)); }
         .item-name{ margin:0; font-size:12px; font-weight:700; color:#eaeaea; width:100%; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-        /* reveal + rarity */
         .reveal { animation: prizeReveal 420ms cubic-bezier(.2,.9,.3,1); }
         @keyframes prizeReveal { 0% { transform: scale(0.6); opacity: 0; filter: blur(6px); } 60% { transform: scale(1.08); opacity: 1; filter: blur(0); } 100% { transform: scale(1); } }
         .rarity-common { box-shadow: 0 8px 30px rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); }
@@ -51,9 +50,34 @@
         .inventory-add { transform: scale(0.65); opacity: 0; }
         .inventory-add.show { transform: scale(1); opacity: 1; }
         .small-muted { color: #8a8a9e; font-size: 12px; }
+        /* DEBUG panel style */
+        #tg-debug { position:fixed; left:8px; top:8px; z-index:2147483647; background:rgba(0,0,0,0.75); color:#fff; padding:8px 10px; border-radius:8px; font-size:12px; line-height:1.2; max-width:calc(100vw - 16px); white-space:pre-wrap; font-family:monospace; }
     </style>
 </head>
 <body>
+    <!-- DEBUG panel: показывает наличие Telegram WebApp, initData и текущий URL -->
+    <script>
+      (function(){
+        const info = document.createElement('div');
+        info.id = 'tg-debug';
+        info.innerText = 'DEBUG: собираю данные…';
+        document.body.appendChild(info);
+        function show(text){ document.getElementById('tg-debug').innerText = text; }
+        try {
+          const hasTelegram = !!window.Telegram && !!window.Telegram.WebApp;
+          const tg = window.Telegram && window.Telegram.WebApp;
+          const init = tg ? (tg.initData ? 'present' : 'MISSING') : 'no WebApp object';
+          const unsafe = tg && tg.initDataUnsafe ? JSON.stringify(tg.initDataUnsafe.user || {}) : '{}';
+          const href = location.href;
+          show(`Telegram object: ${hasTelegram}\ninitData: ${init}\ninitDataUnsafe.user: ${unsafe}\nlocation.href:\n${href}`);
+          console.log('TG DEBUG:', { hasTelegram, initData: tg && tg.initData, initDataUnsafe: tg && tg.initDataUnsafe, href });
+        } catch (e) {
+          show('DEBUG ERROR: ' + e);
+          console.error(e);
+        }
+      })();
+    </script>
+
     <div class="glow-bg"></div>
     <div class="container">
         <div class="header">
@@ -97,21 +121,21 @@
         <div class="nav-item" id="nav-profile"><span class="nav-icon">👤</span><span>Профиль</span></div>
     </div>
 
-    <!-- Audio (положите свои файлы в /assets/sounds/ или укажите URL) -->
+    <!-- Audio (опционально) -->
     <audio id="s_open" src="/assets/sounds/open.mp3" preload="auto"></audio>
     <audio id="s_win" src="/assets/sounds/win.mp3" preload="auto"></audio>
 
 <script>
-/* ====== Настройки: замените SERVER на ваш сервер (HTTPS) ====== */
+/* Настройки: замените SERVER на ваш сервер (HTTPS) */
 const SERVER = "https://your-server.example.com"; // <- Замените на реальный адрес
 const CURRENCY_LABEL = "Stars";
 const ROLL_COST = 20;
 
-/* ====== Telegram WebApp init ====== */
+/* Telegram WebApp init */
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 if (tg) { tg.expand(); tg.ready(); }
 
-/* ====== Данные предметов ====== */
+/* Данные предметов */
 const itemsDatabase = {
     "toy": { name: "Обычный Мишка", icon: "🧸", rarity: "common" },
     "balloon": { name: "Воздушный Шарик", icon: "🎈", rarity: "common" },
@@ -121,11 +145,10 @@ const itemsDatabase = {
     "nft_hacker": { name: "NFT: Кибер-Хакер", icon: "⚡", rarity: "epic" }
 };
 
-/* ====== UI state ====== */
+/* UI state */
 let balance = 0;
-let playerInventory = []; // массив id предметов e.g. ["toy", "nft_durov"]
+let playerInventory = [];
 let isRolling = false;
-
 document.getElementById('currency-label').innerText = CURRENCY_LABEL;
 
 async function loadInitData() {
@@ -145,7 +168,6 @@ async function loadInitData() {
         }
         const data = await res.json();
         balance = Number(data.balance) || 0;
-        // ожидаем data.inventory = [{id, name, rarity}], используем id
         playerInventory = Array.isArray(data.inventory) ? data.inventory.map(it => it.id || it.name) : [];
         updateBalanceView();
         renderInventory();
@@ -162,7 +184,6 @@ function updateBalanceView() {
     setTimeout(()=>el.classList.remove('balance-pulse'), 300);
 }
 
-/* render inventory grid from playerInventory (ids) */
 function renderInventory() {
     const list = document.getElementById('inventory-list');
     list.innerHTML = '';
@@ -175,8 +196,6 @@ function renderInventory() {
         const div = document.createElement('div');
         div.className = 'inventory-item';
         div.innerHTML = `<div class="item-icon">${item.icon}</div><div class="item-name">${item.name}</div>`;
-        // click -> send sell request via bot callback (existing bot handler uses InlineKeyboard buttons),
-        // here we just show hint to sell via bot interface
         div.addEventListener('click', () => {
             if (tg) tg.showPopup({ title: 'Продажа', message: 'Чтобы продать предмет — открой бот и продай через инлайн-кнопку.', buttons:[{type:'ok'}] });
             else alert('Чтобы продать предмет — открой бот и используй кнопку "Инвентарь".');
@@ -189,25 +208,18 @@ function renderInventory() {
 const soundOpen = document.getElementById('s_open');
 const soundWin = document.getElementById('s_win');
 function playSound(el) { try { el.currentTime = 0; el.play().catch(()=>{}); } catch(e) {} }
-function confettiBurst() {
-    confetti({ particleCount: 60, spread: 70, origin: { y: 0.35 } });
-    confetti({ particleCount: 40, spread: 120, origin: { y: 0.25 } });
-}
+function confettiBurst() { confetti({ particleCount: 60, spread: 70, origin: { y: 0.35 } }); confetti({ particleCount: 40, spread: 120, origin: { y: 0.25 } }); }
 function animateBalanceChange(oldVal, newVal) {
     const el = document.getElementById('stars-count');
-    const duration = 700;
-    const start = performance.now();
-    const diff = newVal - oldVal;
+    const duration = 700; const start = performance.now(); const diff = newVal - oldVal;
     function frame(t) {
         const p = Math.min(1, (t - start)/duration);
         const eased = p < 0.5 ? 2*p*p : -1 + (4 - 2*p)*p;
         el.innerText = Math.round(oldVal + diff*eased);
-        if (p < 1) requestAnimationFrame(frame);
-        else el.innerText = newVal;
+        if (p < 1) requestAnimationFrame(frame); else el.innerText = newVal;
     }
     requestAnimationFrame(frame);
-    el.classList.add('balance-pulse');
-    setTimeout(()=>el.classList.remove('balance-pulse'), 350);
+    el.classList.add('balance-pulse'); setTimeout(()=>el.classList.remove('balance-pulse'), 350);
 }
 function animateAddToInventory(itemId) {
     const list = document.getElementById('inventory-list');
@@ -219,7 +231,7 @@ function animateAddToInventory(itemId) {
     requestAnimationFrame(()=> div.classList.add('show'));
 }
 
-/* Roll logic with carousel, server fix_drop and animations */
+/* Roll logic */
 async function startRoll() {
     if (isRolling) return;
     if (!tg || !tg.initData || !tg.initDataUnsafe || !tg.initDataUnsafe.user) {
@@ -240,10 +252,8 @@ async function startRoll() {
     progressParent.style.display = 'block';
     progressLine.style.width = '0%';
     dropText.innerText = 'Роллим кейс...';
-
     playSound(soundOpen);
 
-    // carousel
     const display = Object.keys(itemsDatabase);
     let idx = 0;
     const carousel = setInterval(()=> {
@@ -258,7 +268,6 @@ async function startRoll() {
     await new Promise(r => setTimeout(r, wait));
     clearInterval(carousel);
 
-    // pick prize (can be server-side weighted later; here random client-side selection but we will request fix on server)
     const keys = Object.keys(itemsDatabase);
     const prizeKey = keys[Math.floor(Math.random()*keys.length)];
     const prize = itemsDatabase[prizeKey];
@@ -283,14 +292,12 @@ async function startRoll() {
         balance = Number(data.balance) || balance;
         animateBalanceChange(oldBal, balance);
 
-        // visual reveal
         caseArt.innerText = prize.icon;
         caseArt.classList.add('reveal');
         dropText.innerText = `Выпало: ${prize.name}!`;
         caseArt.parentElement.classList.add(prize.rarity === 'epic' ? 'rarity-epic' : 'rarity-common');
         setTimeout(()=> { caseArt.classList.remove('reveal'); caseArt.parentElement.classList.remove('rarity-epic'); caseArt.parentElement.classList.remove('rarity-common'); }, 900);
 
-        // add to UI inventory
         playerInventory.unshift(prizeKey);
         animateAddToInventory(prizeKey);
 
@@ -304,10 +311,7 @@ async function startRoll() {
         ok = false;
     }
 
-    if (!ok) {
-        dropText.innerText = 'Ошибка фиксации дропа.';
-    }
-
+    if (!ok) dropText.innerText = 'Ошибка фиксации дропа.';
     btn.disabled = false;
     progressParent.style.display = 'none';
     progressLine.style.width = '0%';
@@ -315,10 +319,7 @@ async function startRoll() {
 }
 
 /* UI helpers */
-function showInfo(msg) {
-    if (tg) tg.showPopup({ title: 'Информация', message: msg, buttons: [{type:'ok'}] });
-    else alert(msg);
-}
+function showInfo(msg) { if (tg) tg.showPopup({ title: 'Информация', message: msg, buttons: [{type:'ok'}] }); else alert(msg); }
 
 /* Modal and nav handlers */
 const backpackModal = document.getElementById('backpack-modal');
@@ -337,7 +338,7 @@ navProfileBtn.addEventListener('click', ()=> {
     showInfo(`Привет, ${uname}!`);
 });
 
-/* Запуск init при загрузке */
+/* Run init on load */
 window.addEventListener('load', ()=> { loadInitData(); });
 </script>
 
